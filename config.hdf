@@ -1,0 +1,3 @@
+Server {
+  DefaultDocument = src/index.php
+}
