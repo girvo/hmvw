@@ -19,7 +19,7 @@ class PostRepository
 {
     use Repository;
     
-    public function __construct(): void {}
+    public function __construct() {}
     
     /**
      * @param int $id The ID of the post to retrieve
@@ -28,7 +28,7 @@ class PostRepository
     public function findOne(int $id): Post {
         
         $query = 'SELECT * FROM posts WHERE posts.id = :id LIMIT 1';
-        $query_data = Map { ":id" => $id };
+        $query_data = Map { ':id' => $id };
         
         $result_set = $this->find($query, $query_data);
         
@@ -56,12 +56,13 @@ class PostRepository
      */
     public function update(Post $updated_post): bool {
 
-        $update_query = "UPDATE posts SET 
+        $update_query = 'UPDATE posts SET 
                         title = :title, 
                         body = :body,
                         created_at = :created_at,
                         author_id = :author_id
-                        WHERE `posts`.id = :id";
+                        WHERE `posts`.id = :id';
+        
         $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         
         $query = $this->db->prepare($update_query);
@@ -69,66 +70,101 @@ class PostRepository
 
         $query->execute($data);
 
-        var_dump($query->rowCount());
+        if ($query->rowCount() > 0) {
+            return true;
+        }
         
         return false;
     }
     
+    public function create(Post $new_post): Post {
+        $insert_query = 'INSERT INTO posts (title, body, created_at, author_id)
+                         VALUES (:title, :body, :created_at, :author_id)';
+                         
+        $insert_data = $new_post->asQueryData(Set{ 'title', 'body', 'created_at', 'author_id', });
+        
+        //$this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $db = $this->connect();
+        $query = $db->prepare($insert_query);
+        $query->execute($insert_data);
+        
+        $new_post->id = $db->lastInsertId();
+        
+        return $new_post;
+    }
+    
     public function doTest(): void {
-        $orig = $this->findOne(1);
+    
+        $new_post = new Post(-1, 'A New Post', 'This is some body text', new DateTime('NOW'), 1);
+        $returned_post = $this->create($new_post);
         
-        var_dump($orig);
-        
-        print "<br/><br/>";
-        
-        $new = $orig;
-        
-        $new->title = "This is an update test";
-        
-        $this->update($new);
-        
-        $updated = $this->findOne(1);
-        
-        var_dump($updated);
+        var_dump($returned_post);
     }
     
 }
 
 trait Model
 {
-    public function asQueryData(): Map<string, mixed> {
+    public function asQueryData(?Set<string> $wanted_props = null): Map<string, mixed> {
         $result = Map {};
         $props = get_object_vars($this);
         
-        foreach ($props as $property => $value) {
-            // nasty :/
-            if ($value instanceof DateTime) {
-                $result[':'.$property] = $value->format('Y-m-d h:m:s');
-            } else {
-                $result[':'.$property] = $value;
+        if ($wanted_props) {
+        
+            foreach ($props as $property => $value) {
+                $property_str = (string) $property;
+            
+                if ($wanted_props->contains($property_str)) {
+                    if ($value instanceof DateTime) {
+                        $result[':'.$property_str] = (string) $value->format('Y-m-d h:m:s');
+                    } else {
+                        $result[':'.$property_str] = $value;
+                    }
+                }
             }
-        }
+            
+        } else {     
+        
+            foreach ($props as $property => $value) {
+                // nasty :/
+                $property_str = (string) $property;
 
+                // really nasty :(
+                if ($value instanceof DateTime) {
+                    $result[':'.$property_str] = (string) $value->format('Y-m-d h:m:s');
+                } else {
+                    $result[':'.$property_str] = $value;
+                }
+            }
+            
+        }
+        
         return $result;
     }
 }
 
 trait Repository
 {
+    private PDO $db;
+    
+    public function __construct(): void {
+        $this->db = new PDO('sqlite:../db/database.sqlite3');
+        $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    }
+    
+    private function connect(): PDO {
+        $db = new PDO('sqlite:../db/database.sqlite3');
+        $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        return $db;
+    }
+    
     /**
-     * Private method to run particular queries for the public method calls
+     * Private method to run a query that returns a set of Models
      * 
      * @param string $query The query string itself as a prepared statement
      * @param Map<string, string> $data Array of data to be passed into the query
      * @return Vector<Map<string, string>> The collection of results, can be empty
      */
-    private PDO $db;
-     
-    public function __construct(): void {
-        $this->db = new PDO('sqlite:../db/database.sqlite3');
-        $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    }
-     
     private function find(
           string $query,
           QueryData $data,
