@@ -49,6 +49,28 @@ class PostRepository
         );
     }
     
+    public function findMany(
+        string $column, 
+        string $operator,
+        string $comparison,
+      ): Vector<Post> {
+        
+        $base_query = 'SELECT * FROM posts WHERE :column :operator :comparison';
+        
+        $query_data = Map { 
+            ':column' => $column,
+            ':operator' => $operator,
+            ':comparison' => $comparison,
+        };
+        
+        $db = $this->connect();
+        $query = $db->prepare($base_query);
+        
+        $results = $query->execute($query_data);
+        var_dump($results);
+        die;
+    }
+    
     /**
      * Updates a post, that matches the $updated_post->id
      * @param Post $updated_post The updated post object to be persisted.
@@ -62,10 +84,10 @@ class PostRepository
                         created_at = :created_at,
                         author_id = :author_id
                         WHERE `posts`.id = :id';
+        $db = $this->connect();
+        $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         
-        $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        
-        $query = $this->db->prepare($update_query);
+        $query = $db->prepare($update_query);
         $data = $updated_post->asQueryData();
 
         $query->execute($data);
@@ -111,14 +133,16 @@ class PostRepository
     
     public function doTest(): void {
     
-        $new_post = new Post(-1, 'A New Post', 'This is some body text', new DateTime('NOW'), 1);
-        $returned_post = $this->create($new_post);
+        //$new_post = new Post(-1, 'A New Post', 'This is some body text', new DateTime('NOW'), 1);
+        //$posts = $this->findMany('`id`', '>', '1');
         
-        var_dump($returned_post);
+        $db = $this->connect();
+        $query = $db->prepare('SELECT * FROM posts WHERE :fragment');
         
-        if ($this->delete($new_post)) {
-            print "deleted";
-        }
+        $query->execute(Map {':fragment' => 'posts.id = 1'});
+        $results = $query->fetchAll();
+        var_dump($results);
+        die;
     }
     
 }
@@ -167,10 +191,7 @@ trait Repository
 {
     private PDO $db;
     
-    public function __construct(): void {
-        $this->db = new PDO('sqlite:../db/database.sqlite3');
-        $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    }
+    public function __construct(): void {}
     
     private function connect(): PDO {
         $db = new PDO('sqlite:../db/database.sqlite3');
@@ -187,12 +208,12 @@ trait Repository
      */
     private function find(
           string $query,
-          QueryData $data,
+          QueryData $data = Map{},
         ): Vector<Map<string, string>> {
     
-        $this->db = new PDO('sqlite:../db/database.sqlite3');
+        $db = $this->connect();
         
-        $query = $this->db->prepare($query);
+        $query = $db->prepare($query);
         $query->execute($data);
         $result = $query->fetchAll();
         
