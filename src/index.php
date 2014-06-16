@@ -2,6 +2,7 @@
 
 require "Post.hh";
 require "User.hh";
+require "Router.hh";
 
 function pre($string) {
     print '<pre>';

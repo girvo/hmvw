@@ -165,7 +165,7 @@ class PostRepository
         //$new_post = new Post(-1, 'A New Post', 'This is some body text', new DateTime('NOW'), 1);
         //$posts = $this->findMany('`id`', '>', '1');
         
-       $results = $this->findMany("'", '<', '4');
+       $results = $this->findMany("", '<', '4');
        var_dump($results);
     }
     
