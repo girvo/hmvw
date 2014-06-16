@@ -54,21 +54,50 @@ class PostRepository
         string $operator,
         string $comparison,
       ): Vector<Post> {
-        
-        $base_query = 'SELECT * FROM posts WHERE :column :operator :comparison';
+
+        // $column is unsafe!!!! Need to sanitise?
+        switch ($operator) {
+            case '<':
+                $base_query = 'SELECT * FROM posts WHERE '.$column.' < :comparison';
+                break;
+            case '>':
+                $base_query = 'SELECT * FROM posts WHERE '.$column.' > :comparison';
+                break;
+            case '=':
+                $base_query = 'SELECT * FROM posts WHERE '.$column.' = :comparison';
+                break;
+            case '<=':
+                $base_query = 'SELECT * FROM posts WHERE '.$column.' <= :comparison';
+                break;
+            case '>=':
+                $base_query = 'SELECT * FROM posts WHERE '.$column.' >= :comparison';
+                break;
+            default:
+                throw new Exception('Incorrect operator for findMany: "'.$operator.'"');
+                break;
+        }
         
         $query_data = Map { 
-            ':column' => $column,
-            ':operator' => $operator,
             ':comparison' => $comparison,
         };
         
         $db = $this->connect();
         $query = $db->prepare($base_query);
+        $query->execute($query_data);
         
-        $results = $query->execute($query_data);
-        var_dump($results);
-        die;
+        $results = $query->fetchAll();
+        $real_results = Vector{};
+        foreach($results as $result) {
+            $real_results[] = new Post(
+                (int) $result['id'],
+                $result['title'],
+                $result['body'],
+                new DateTime($result['created_at']),
+                (int) $result['author_id'],
+            );
+        }
+        
+        return $real_results;
     }
     
     /**
@@ -136,13 +165,8 @@ class PostRepository
         //$new_post = new Post(-1, 'A New Post', 'This is some body text', new DateTime('NOW'), 1);
         //$posts = $this->findMany('`id`', '>', '1');
         
-        $db = $this->connect();
-        $query = $db->prepare('SELECT * FROM posts WHERE :fragment');
-        
-        $query->execute(Map {':fragment' => 'posts.id = 1'});
-        $results = $query->fetchAll();
-        var_dump($results);
-        die;
+       $results = $this->findMany("'", '<', '4');
+       var_dump($results);
     }
     
 }
@@ -189,7 +213,7 @@ trait Model
 
 trait Repository
 {
-    private PDO $db;
+    private ?PDO $db;
     
     public function __construct(): void {}
     
