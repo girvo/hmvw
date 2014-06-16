@@ -93,12 +93,32 @@ class PostRepository
         return $new_post;
     }
     
+    public function delete(Post $post): bool {
+        $delete_query = 'DELETE FROM posts WHERE id = :id';
+        
+        $delete_data = $post->asQueryData(Set{ 'id' });
+        
+        $db = $this->connect();
+        $query = $db->prepare($delete_query);
+        $query->execute($delete_data);
+        
+        if ($query->rowCount() > 0) {
+            return true;
+        }
+        
+        return false;
+    }
+    
     public function doTest(): void {
     
         $new_post = new Post(-1, 'A New Post', 'This is some body text', new DateTime('NOW'), 1);
         $returned_post = $this->create($new_post);
         
         var_dump($returned_post);
+        
+        if ($this->delete($new_post)) {
+            print "deleted";
+        }
     }
     
 }
