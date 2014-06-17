@@ -1,7 +1,8 @@
 <?hh //partial
 
+require "Repository.hh";
 require "Post.hh";
-require "User.hh";
+/*require "User.hh";
 require "Router.hh";
 
 function pre($string) {
@@ -15,4 +16,8 @@ $app = new Router();
 $app->get('/', 'SomeController:someMethod');
 $app->post('/test/:id', 'SomeThingToTest');
 
-$app->run();
+$app->run();*/
+
+$PostsRepo = new PostRepository();
+
+$PostsRepo->doTest();

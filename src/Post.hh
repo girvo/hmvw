@@ -2,7 +2,7 @@
 
 type QueryData = Map<string, mixed>;
 
-class Post implements ModelInterface
+class Post implements IModel
 {
     use Model;
 
@@ -15,22 +15,12 @@ class Post implements ModelInterface
     ) {}
 }
 
-interface ModelInterface
-{
-}
-
 class PostRepository
 {
     use Repository;
     
-    public function __construct() {}
-    
-    private function newModel(): ModelInterface {
-        return new Post(
+    public function __construct(private string $table = 'posts',) {}
         
-        );
-    }
-    
     /**
      * @param int $id The ID of the post to retrieve
      * @return ?Post The hydrated post model
@@ -172,20 +162,31 @@ class PostRepository
         return false;
     }
     
-    public function doTest(): void {
-    
-        //$new_post = new Post(-1, 'A New Post', 'This is some body text', new DateTime('NOW'), 1);
-        //$posts = $this->findMany('`id`', '>', '1');
-        
-       $results = $this->findMany("", '<', '4');
-       var_dump($results);
+    public function doTest(): void {        
+        $results = $this->findOne(1);
+        $results->title = 'A test of my new insert';
+       
+        try {
+            $newId = $this->insert($results->asQueryData());
+            $item = clone $results;
+            $item->id = $newId;
+            var_dump($item);
+            var_dump($results);
+        } catch (Exception $e) {
+            print $e->getMessage();
+        }
     }
     
 }
 
+
+interface IModel
+{
+}
+
 trait Model
 {
-    public function asQueryData(?Set<string> $wanted_props = null): Map<string, mixed> {
+    public function asQueryData(?Set<string> $wanted_props = null): QueryData {
         $result = Map {};
         $props = get_object_vars($this);
         
@@ -220,45 +221,5 @@ trait Model
         }
         
         return $result;
-    }
-}
-
-trait Repository
-{
-    private ?PDO $db;
-    
-    public function __construct(): void {}
-    
-    private function connect(): PDO {
-        $db = new PDO('sqlite:../db/database.sqlite3');
-        $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        return $db;
-    }
-    
-    /**
-     * Private method to run a query that returns a set of Models
-     * 
-     * @param string $query The query string itself as a prepared statement
-     * @param Map<string, string> $data Array of data to be passed into the query
-     * @return Vector<Map<string, string>> The collection of results, can be empty
-     */
-    private function find(
-          string $query,
-          QueryData $data = Map{},
-        ): Vector<Map<string, string>> {
-    
-        $db = $this->connect();
-        
-        $query = $db->prepare($query);
-        $query->execute($data);
-        $result = $query->fetchAll();
-        
-        $real_result = Vector{};
-        
-        foreach($result as $item) {
-            $real_result[] = new Map($item);
-        }
-        
-        return $real_result;
     }
 }
