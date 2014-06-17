@@ -6,8 +6,6 @@ PHP-derived statically (and strongly) typed web language. It's currently very
 rough, so feel free to take a look, but it's certainly only in it's earliest 
 stage at the moment.
 
-----
-
 ## Goals
 
 ### Everything As Strictly-Typed As Possible
@@ -19,13 +17,12 @@ The aim is to allow for flexibility when building your web app; using Traits
 and Interfaces instead of regular class heirachies means you can have your app 
 as complex as need be without the framework getting in the way. 
 
-----
-
 ## Current Status
 Very very rough. I have the base implementation using PDO of a "Model" and 
 "Repository", and the base outline of how the router should work, and am in the
 process of extracting the methods out into traits, and genericising them where 
 I can.
+
 
 ----
 
