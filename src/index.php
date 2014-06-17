@@ -10,6 +10,9 @@ function pre($string) {
     print '</pre>';
 }
 
-$postRepo = new PostRepository();
+$app = new Router();
 
-$postRepo->doTest();
+$app->get('/', 'SomeController:someMethod');
+$app->post('/test/:id', 'SomeThingToTest');
+
+$app->run();

@@ -1,8 +1,8 @@
 <?hh //strict
 
-newtype QueryData = Map<string, mixed>;
+type QueryData = Map<string, mixed>;
 
-class Post
+class Post implements ModelInterface
 {
     use Model;
 
@@ -15,11 +15,21 @@ class Post
     ) {}
 }
 
+interface ModelInterface
+{
+}
+
 class PostRepository
 {
     use Repository;
     
     public function __construct() {}
+    
+    private function newModel(): ModelInterface {
+        return new Post(
+        
+        );
+    }
     
     /**
      * @param int $id The ID of the post to retrieve
@@ -86,7 +96,9 @@ class PostRepository
         $query->execute($query_data);
         
         $results = $query->fetchAll();
+        
         $real_results = Vector{};
+        
         foreach($results as $result) {
             $real_results[] = new Post(
                 (int) $result['id'],
